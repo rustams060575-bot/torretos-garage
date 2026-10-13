@@ -1,0 +1,462 @@
+{
+  "tolerancePx": 2,
+  "viewport": "1440x810@2x",
+  "scenes": [
+    {
+      "scene": 5,
+      "design": "Frame 13.png",
+      "frame": {
+        "name": "2:fwd",
+        "src": "2",
+        "frame": 360,
+        "currentTime": 15.020833
+      },
+      "mismatchPct": 6.23,
+      "textsChecked": 42,
+      "textsWithinTol": 42,
+      "maxAbsOffset": 1.5,
+      "texts": [
+        {
+          "text": "О НАС",
+          "x": 37.5,
+          "y": 46.4,
+          "dx": 0,
+          "dy": 1.5,
+          "conf": 0.68,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "ПРЕИМУЩЕСТВА",
+          "x": 105.9,
+          "y": 46.4,
+          "dx": 0,
+          "dy": 1.5,
+          "conf": 0.61,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "УСЛУГИ",
+          "x": 240.2,
+          "y": 46.4,
+          "dx": 0,
+          "dy": 1.5,
+          "conf": 0.67,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "КОНТАКТЫ",
+          "x": 319.7,
+          "y": 46.4,
+          "dx": -1,
+          "dy": 1.5,
+          "conf": 0.63,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "ALICANTE UNIT · ONLINE",
+          "x": 457.7,
+          "y": 47.3,
+          "dx": -1,
+          "dy": 1,
+          "conf": 0.45,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "DRIVE SELECT · SPORT+",
+          "x": 1190.4,
+          "y": 43.2,
+          "dx": 0.5,
+          "dy": -1,
+          "conf": 0.62,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "ЗАПИСАТЬСЯ / BOOK SERVICE →",
+          "x": 1190.4,
+          "y": 53.9,
+          "dx": -1.5,
+          "dy": -0.5,
+          "conf": 0.39,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "PRECISION",
+          "x": 170,
+          "y": 641.7,
+          "dx": 0,
+          "dy": 0,
+          "conf": 0.65,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "PERFORMANCE",
+          "x": 383,
+          "y": 641.7,
+          "dx": -0.5,
+          "dy": 0,
+          "conf": 0.5,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "CONTROL",
+          "x": 614.7,
+          "y": 641.7,
+          "dx": 0,
+          "dy": 0,
+          "conf": 0.57,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "POWER",
+          "x": 822.3,
+          "y": 641.7,
+          "dx": 0,
+          "dy": 0,
+          "conf": 0.49,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "INTEGRITY",
+          "x": 1020.4,
+          "y": 641.7,
+          "dx": 0,
+          "dy": 0,
+          "conf": 0.63,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "SERVICE",
+          "x": 1233,
+          "y": 641.7,
+          "dx": 0,
+          "dy": 0,
+          "conf": 0.62,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "05",
+          "x": 37.4,
+          "y": 757.3,
+          "dx": 0.5,
+          "dy": 1,
+          "conf": 0.54,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "[ ЗАБРОНИРОВАТЬ ВИЗИТ → ]",
+          "x": 93.4,
+          "y": 164.5,
+          "dx": 0.5,
+          "dy": 1,
+          "conf": 0.38,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "ТВОЙ АВТОМОБИЛЬ.",
+          "x": 702.1,
+          "y": 142,
+          "dx": -9,
+          "dy": 0,
+          "conf": 0.12,
+          "reliable": false,
+          "pass": true
+        },
+        {
+          "text": "НАШ СТАНДАРТ.",
+          "x": 859.3,
+          "y": 213,
+          "dx": -8,
+          "dy": 9,
+          "conf": 0.17,
+          "reliable": false,
+          "pass": true
+        },
+        {
+          "text": "HUD·05",
+          "x": 53.9,
+          "y": 349.6,
+          "dx": -0.5,
+          "dy": 0,
+          "conf": 0.69,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "360° CHECK",
+          "x": 89.9,
+          "y": 348.8,
+          "dx": 0,
+          "dy": 0,
+          "conf": 0.48,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "LIVE",
+          "x": 248.8,
+          "y": 350,
+          "dx": 1.5,
+          "dy": 0,
+          "conf": 0.62,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "INSPECTION POINTS",
+          "x": 53.9,
+          "y": 390.5,
+          "dx": 0,
+          "dy": 0.5,
+          "conf": 0.57,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "142 / 142",
+          "x": 220.7,
+          "y": 391,
+          "dx": -0.5,
+          "dy": -0.5,
+          "conf": 0.42,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "DTC ERRORS",
+          "x": 53.9,
+          "y": 418.5,
+          "dx": -0.5,
+          "dy": 0,
+          "conf": 0.58,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "0",
+          "x": 262.9,
+          "y": 419,
+          "dx": 0.5,
+          "dy": -0.5,
+          "conf": 0.68,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "STATUS",
+          "x": 53.9,
+          "y": 446,
+          "dx": 0,
+          "dy": 1,
+          "conf": 0.52,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "READY FOR PICKUP",
+          "x": 183.7,
+          "y": 446.5,
+          "dx": -0.5,
+          "dy": -0.5,
+          "conf": 0.38,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "HUD·05",
+          "x": 1156.5,
+          "y": 349.6,
+          "dx": -0.5,
+          "dy": 0,
+          "conf": 0.66,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "NEXT SLOT",
+          "x": 1192.7,
+          "y": 348.7,
+          "dx": 0.5,
+          "dy": 0,
+          "conf": 0.48,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "LIVE",
+          "x": 1366.4,
+          "y": 350,
+          "dx": 1,
+          "dy": 0,
+          "conf": 0.68,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "MON · 09:00",
+          "x": 1156,
+          "y": 371.3,
+          "dx": 1,
+          "dy": 0,
+          "conf": 0.27,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "SERVICE BAY",
+          "x": 1156.5,
+          "y": 423.5,
+          "dx": 0,
+          "dy": 0.5,
+          "conf": 0.6,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "02 · READY",
+          "x": 1333,
+          "y": 424,
+          "dx": -0.5,
+          "dy": 0,
+          "conf": 0.44,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "CONCIERGE",
+          "x": 1156.5,
+          "y": 451.7,
+          "dx": -0.5,
+          "dy": 0,
+          "conf": 0.58,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "ON CALL",
+          "x": 1348.8,
+          "y": 452.1,
+          "dx": 0,
+          "dy": -0.5,
+          "conf": 0.53,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "LEAD TIME",
+          "x": 1156.5,
+          "y": 479,
+          "dx": 0,
+          "dy": 1,
+          "conf": 0.59,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "< 24 h",
+          "x": 1354.1,
+          "y": 479.5,
+          "dx": -0.5,
+          "dy": -0.5,
+          "conf": 0.52,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "MON–FRI",
+          "x": 789.2,
+          "y": 716.9,
+          "dx": -0.5,
+          "dy": 0,
+          "conf": 0.3,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "Working Hours",
+          "x": 789.2,
+          "y": 750.1,
+          "dx": -0.5,
+          "dy": -1.5,
+          "conf": 0.58,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "ONLINE",
+          "x": 949.7,
+          "y": 716.9,
+          "dx": -0.5,
+          "dy": -0.5,
+          "conf": 0.44,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "Instant Booking",
+          "x": 949.7,
+          "y": 750.1,
+          "dx": -1,
+          "dy": -1.5,
+          "conf": 0.67,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "VIP",
+          "x": 1110.2,
+          "y": 716.9,
+          "dx": -1,
+          "dy": 0.5,
+          "conf": 0.44,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "Personal Concierge",
+          "x": 1110.2,
+          "y": 750.1,
+          "dx": -0.5,
+          "dy": -1.5,
+          "conf": 0.68,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "GARAGE",
+          "x": 1270.7,
+          "y": 716.9,
+          "dx": 0.5,
+          "dy": 0,
+          "conf": 0.39,
+          "reliable": true,
+          "pass": true
+        },
+        {
+          "text": "Torreto's Unit",
+          "x": 1270.7,
+          "y": 750.1,
+          "dx": -1,
+          "dy": -1.5,
+          "conf": 0.64,
+          "reliable": true,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}

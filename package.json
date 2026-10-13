@@ -1,0 +1,20 @@
+{
+  "name": "torretos-garage",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Torreto's Garage — scrollytelling landing engine",
+  "scripts": {
+    "build:video": "node tools/build-video.mjs",
+    "serve": "node tools/serve.mjs",
+    "test": "node tools/run-autotest.mjs",
+    "pixel": "node tools/pixel-compare.mjs",
+    "tunnel": "cloudflared tunnel --no-autoupdate --url http://127.0.0.1:5173",
+    "build:clips": "node tools/build-clips.mjs",
+    "latency": "node tools/latency.mjs"
+  },
+  "devDependencies": {
+    "pixelmatch": "^8.0.0",
+    "playwright": "^1.64.0",
+    "pngjs": "^7.0.0"
+  }
+}

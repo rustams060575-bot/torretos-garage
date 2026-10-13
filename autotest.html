@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Torreto's Engine Autotest</title>
+<style>
+  :root { --bg: #0b0d14; --fg: #e8ebf2; --mut: #8b93a7; --ok: #3ee67e; --bad: #ff5a4a; --line: #232838; --acc: #f39a2b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.45 system-ui, sans-serif; display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 460px); height: 100vh; }
+  .stage { position: relative; background: #000; display: grid; place-items: center; overflow: hidden; }
+  iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; max-height: 100vh; }
+  aside { border-left: 1px solid var(--line); overflow: auto; padding: 18px; }
+  h1 { font-size: 16px; margin: 0 0 4px; letter-spacing: .04em; }
+  .sum { color: var(--mut); margin-bottom: 14px; }
+  .sum b { color: var(--fg); }
+  ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+  li { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  li .n { display: flex; justify-content: space-between; gap: 8px; }
+  li .d { color: var(--mut); font: 12px/1.4 ui-monospace, Consolas, monospace; margin-top: 4px; white-space: pre-wrap; }
+  li.ok .s { color: var(--ok); } li.bad .s { color: var(--bad); } li.run .s { color: var(--acc); }
+  @media (max-width: 800px) { body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } aside { border-left: 0; border-top: 1px solid var(--line); } }
+</style>
+</head>
+<body>
+<div class="stage"><iframe id="app" title="Тестируемый лендинг"></iframe></div>
+<aside>
+  <h1>TORRETO'S ENGINE · AUTOTEST</h1>
+  <p class="sum" id="sum">Запуск…</p>
+  <ol id="list"></ol>
+</aside>
+<script>
+/* Mechanics autotest. Drives the real page in an iframe with input events — no autoplay flags,
+   no engine internals are mocked. Results are also exposed on window.__AUTOTEST for the CLI runner. */
+(function () {
+  'use strict';
+  var app = document.getElementById('app');
+  var list = document.getElementById('list');
+  var sum = document.getElementById('sum');
+  var results = [];
+  window.__AUTOTEST = { done: false, results: results };
+
+  var W, D, R, E;
+  var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function load(query) {
+    return new Promise(function (res) {
+      app.onload = function () {
+        W = app.contentWindow; D = W.document; R = D.documentElement;
+        res();
+      };
+      app.src = 'index.html' + (query || '');
+    });
+  }
+  async function until(fn, ms, what) {
+    var t0 = performance.now();
+    while (!fn()) {
+      if (performance.now() - t0 > (ms || 15000)) throw new Error('timeout: ' + (what || fn.toString()));
+      await sleep(25);
+    }
+    return performance.now() - t0;
+  }
+  var idle = function (ms) { return until(function () { return R.dataset.state === 'idle'; }, ms || 15000, 'state=idle'); };
+  var busy = function (ms) { return until(function () { return R.dataset.state === 'transition'; }, ms || 3000, 'state=transition'); };
+
+  /* event recorder */
+  var events = [];
+  function record() {
+    events = [];
+    ['scenechange', 'transitionstart', 'transitionend', 'sceneedge'].forEach(function (t) {
+      R.addEventListener(t, function (e) {
+        /* transitionstart/transitionend are also native CSS TransitionEvents that bubble to <html> — keep the engine's only */
+        if (!(e instanceof W.CustomEvent)) return;
+        events.push({ type: t, detail: e.detail, t: performance.now() });
+      });
+    });
+  }
+  function count(type) { return events.filter(function (e) { return e.type === type; }).length; }
+
+  /* input */
+  function wheel(dy) { D.body.dispatchEvent(new W.WheelEvent('wheel', { deltaY: dy, deltaMode: 0, bubbles: true, cancelable: true })); }
+  function key(k, opt) { D.body.dispatchEvent(new W.KeyboardEvent('keydown', Object.assign({ key: k, bubbles: true, cancelable: true }, opt || {}))); }
+  function touchEv(type, x, y) {
+    var e = new W.Event(type, { bubbles: true, cancelable: true });
+    var t = [{ identifier: 1, clientX: x, clientY: y, target: D.body }];
+    Object.defineProperty(e, 'touches', { value: type === 'touchend' ? [] : t });
+    Object.defineProperty(e, 'changedTouches', { value: t });
+    D.body.dispatchEvent(e);
+  }
+  async function swipe(dy, ms) {
+    var x = 400, y0 = 400, steps = 8;
+    touchEv('touchstart', x, y0);
+    for (var i = 1; i <= steps; i++) { await sleep((ms || 160) / steps); touchEv('touchmove', x, y0 - dy * i / steps); }
+    touchEv('touchend', x, y0 - dy);
+  }
+  /* trackpad-like inertial burst: events every 16 ms with a decaying delta */
+  async function inertia(dir, ms) {
+    var t0 = performance.now(), d = 60;
+    while (performance.now() - t0 < ms) { wheel(dir * Math.max(1.2, d)); d *= 0.985; await sleep(16); }
+  }
+
+  /* state probes */
+  function scene() { return +R.dataset.scene; }
+  function activeUIs() { return Array.prototype.map.call(D.querySelectorAll('.scene-ui.is-active'), function (el) { return +el.dataset.ui; }); }
+  function uiVisible(n) {
+    var el = D.querySelector('.scene-ui[data-ui="' + n + '"]');
+    if (!el.classList.contains('is-active') || el.hidden) return false;
+    var r = el.querySelector('[data-r]');
+    return W.getComputedStyle(el).visibility === 'visible' && r && +W.getComputedStyle(r).opacity > 0;
+  }
+  function checkRest(n) {
+    var cfg = W.SCENES_CONFIG, rest = cfg.scenes[n - 1].rest, v = W.TorretoEngine.visible;
+    var el = D.querySelector('video.is-on');
+    var problems = [];
+    if (scene() !== n) problems.push('data-scene=' + scene() + ' ≠ ' + n);
+    if (R.dataset.state !== 'idle') problems.push('state=' + R.dataset.state);
+    if (D.getElementById('counterNum').textContent !== pad(n)) problems.push('counter=' + D.getElementById('counterNum').textContent);
+    var act = activeUIs();
+    if (act.length !== 1 || act[0] !== n) problems.push('active UI=' + JSON.stringify(act));
+    if (!v || v.src !== rest.src || v.frame !== rest.frame) problems.push('visible=' + JSON.stringify(v) + ' expected ' + JSON.stringify(rest));
+    if (el) {
+      var N = cfg.sources[rest.src].frames;
+      var isRev = /rev/.test(el.dataset.name);
+      var fileFrame = Math.floor(el.currentTime * cfg.fps + 1e-6);
+      var want = isRev ? N - 1 - rest.frame : rest.frame;
+      if (fileFrame !== want) problems.push('decoded frame ' + fileFrame + ' in ' + el.dataset.name + ', want ' + want);
+      if (!el.paused) problems.push('video still playing');
+      if (D.querySelectorAll('video.is-on').length !== 1) problems.push('more than one video on top');
+    } else problems.push('no video on screen');
+    return problems;
+  }
+
+  /* runner */
+  async function test(name, fn) {
+    var li = document.createElement('li');
+    li.className = 'run';
+    li.innerHTML = '<div class="n"><span></span><span class="s">…</span></div><div class="d"></div>';
+    li.querySelector('.n span').textContent = name;
+    list.appendChild(li);
+    var t0 = performance.now(), r = { name: name, ok: true, detail: '' };
+    try {
+      var out = await fn();
+      if (Array.isArray(out) && out.length) { r.ok = false; r.detail = out.join('\n'); }
+      else if (typeof out === 'string') r.detail = out;
+    } catch (e) { r.ok = false; r.detail = String(e && e.message || e); }
+    r.ms = Math.round(performance.now() - t0);
+    results.push(r);
+    li.className = r.ok ? 'ok' : 'bad';
+    li.querySelector('.s').textContent = (r.ok ? '✓ ' : '✗ ') + r.ms + ' ms';
+    li.querySelector('.d').textContent = r.detail;
+    sum.innerHTML = '<b>' + results.filter(function (x) { return x.ok; }).length + '</b> / ' + results.length + ' пройдено';
+  }
+  function assert(c, msg, bag) { if (!c) bag.push(msg); }
+
+  async function main() {
+    await load('');
+    record();
+    var hdr = D.getElementById('hdr'), counter = D.getElementById('counter');
+
+    await test('Старт: статичный резкий постер top.jpeg на сцене 1, видео не стартует само', async function () {
+      var p = [];
+      await until(function () { return R.dataset.state === 'idle'; }, 15000, 'idle');
+      await sleep(2200);
+      var poster = D.getElementById('poster'), img = poster.querySelector('img');
+      assert(scene() === 1 && R.dataset.state === 'idle', 'site moved by itself: scene=' + scene() + ' state=' + R.dataset.state, p);
+      assert(count('transitionstart') === 0, 'a transition started without input', p);
+      assert(poster.classList.contains('is-on') && +W.getComputedStyle(poster).opacity === 1, 'poster not shown', p);
+      assert(img.complete && img.naturalWidth >= 1000 && /top\.jpeg$/.test(img.currentSrc), 'top.jpeg not loaded: ' + img.currentSrc, p);
+      assert(uiVisible(1), 'scene 1 UI not visible', p);
+      p = p.concat(checkRest(1));
+      return p;
+    });
+
+    await test('Первый скролл: постер растворяется в видео, экран 1 держится весь интервал (≈5 с)', async function () {
+      var p = [], poster = D.getElementById('poster');
+      wheel(120);
+      await busy();
+      await sleep(250);
+      var o1 = +W.getComputedStyle(poster).opacity;
+      assert(o1 > 0.05 && o1 < 1, 'poster should be mid-dissolve at +250 ms, opacity=' + o1, p);
+      await sleep(1000);
+      assert(+W.getComputedStyle(poster).opacity === 0, 'poster still visible after the fade', p);
+      var on = D.querySelector('video.is-on');
+      assert(on && on.dataset.name === '1:fwd' && !on.paused, 'video under the poster is not playing', p);
+      assert(uiVisible(1) && activeUIs().join() === '1', 'scene 1 screen must hold during its interval', p);
+      await idle();
+      await sleep(700);
+      p = p.concat(checkRest(2));
+      var iv = events.filter(function (e) { return e.type === 'transitionend'; })[0];
+      assert(iv && iv.detail.ms > 4300 && iv.detail.ms < 6500, 'scene 1 interval ~5 s, got ' + (iv && iv.detail.ms), p);
+      assert(R.dataset.poster === 'off', 'data-poster=' + R.dataset.poster, p);
+      return p.length ? p : 'interval ' + iv.detail.ms + ' ms';
+    });
+
+    await test('Шапка и счётчик объявлены один раз', async function () {
+      var p = [];
+      assert(D.querySelectorAll('header.hdr').length === 1, 'header count ≠ 1', p);
+      assert(D.querySelectorAll('#counter').length === 1, 'counter count ≠ 1', p);
+      assert(D.querySelectorAll('.tach').length === 1, 'tachometer count ≠ 1', p);
+      assert(D.querySelectorAll('#ledToggle').length === 1 && D.querySelectorAll('#soundToggle').length === 1, 'header modules duplicated', p);
+      return p;
+    });
+
+    await test('Вперёд колесом: 2 → 3 — экран сцены 2 неподвижно держится весь интервал, смена в конце', async function () {
+      var p = [], before = events.length, headerRect = hdr.getBoundingClientRect().top;
+      var ttl = D.querySelector('.scene-ui[data-ui="2"] .ttl');
+      wheel(120);
+      await busy();
+      assert(R.dataset.direction === 'forward', 'direction=' + R.dataset.direction, p);
+      await sleep(300);
+      var r0 = ttl.getBoundingClientRect();
+      for (var i = 0; i < 4; i++) {
+        await sleep(900);
+        if (R.dataset.state !== 'transition') break;
+        var r = ttl.getBoundingClientRect();
+        assert(uiVisible(2) && activeUIs().join() === '2', 'scene 2 screen not held at +' + (300 + 900 * (i + 1)) + ' ms, active=' + activeUIs(), p);
+        assert(Math.abs(r.top - r0.top) < 0.01 && Math.abs(r.left - r0.left) < 0.01, 'scene 2 screen moved during its interval', p);
+        assert(!uiVisible(3), 'scene 3 UI visible before the interval ended', p);
+      }
+      await idle();
+      var leaving = D.querySelector('.scene-ui[data-ui="2"]').classList.contains('is-leaving');
+      await sleep(900);
+      p = p.concat(checkRest(3));
+      assert(leaving, 'scene 2 screen did not fade out at the end of the interval', p);
+      var seq = events.slice(before).map(function (e) { return e.type; }).join(',');
+      assert(seq === 'transitionstart,transitionend,scenechange', 'event order: ' + seq, p);
+      assert(uiVisible(3), 'scene 3 UI not shown', p);
+      assert(hdr.getBoundingClientRect().top === headerRect, 'header moved', p);
+      assert(D.getElementById('hdr') === hdr && D.getElementById('counter') === counter, 'chrome re-created', p);
+      return p;
+    });
+
+    await test('Скролл во время перехода игнорируется и не копится', async function () {
+      var p = [], s0 = count('transitionstart');
+      wheel(120);
+      await busy();
+      for (var i = 0; i < 8; i++) { await sleep(220); wheel(i % 2 ? -120 : 120); key('ArrowDown'); }
+      await idle();
+      await sleep(700);
+      p = p.concat(checkRest(4));
+      assert(count('transitionstart') - s0 === 1, 'transitions started: ' + (count('transitionstart') - s0), p);
+      assert(R.dataset.state === 'idle', 'a queued transition fired after the first one', p);
+      return p;
+    });
+
+    await test('Инерционный жест трекпада = ровно 1 шаг (хвост длиннее перехода)', async function () {
+      var p = [], s0 = count('transitionstart');
+      await inertia(1, 6200);           // longer than the 4→5 interval (~5 s)
+      await idle();
+      await sleep(400);
+      p = p.concat(checkRest(5));
+      assert(count('transitionstart') - s0 === 1, 'steps from one inertial gesture: ' + (count('transitionstart') - s0), p);
+      return p;
+    });
+
+    await test('Упор на сцене 5: дальше вниз не едет', async function () {
+      var p = [], s0 = count('transitionstart'), e0 = count('sceneedge');
+      await sleep(250); wheel(120); await sleep(250); key('ArrowDown'); await sleep(250); await swipe(200);
+      await sleep(500);
+      assert(count('transitionstart') === s0, 'moved past the last scene', p);
+      assert(count('sceneedge') - e0 === 3, 'sceneedge events: ' + (count('sceneedge') - e0), p);
+      return p.concat(checkRest(5));
+    });
+
+    await test('Клавиатура назад: ↑ 5 → 4 (нативный реверс-файл; экран 4 сразу — время вернулось в его интервал)', async function () {
+      var p = [];
+      key('ArrowUp');
+      await busy();
+      assert(R.dataset.direction === 'backward', 'direction=' + R.dataset.direction, p);
+      await sleep(900);
+      var on = D.querySelector('video.is-on');
+      assert(on && on.dataset.name === '2:rev', 'backward should play the reversed file, got ' + (on && on.dataset.name), p);
+      assert(on && !on.paused, 'reversed file is not playing natively', p);
+      assert(uiVisible(4) && activeUIs().join() === '4', 'scene 4 screen should be up while its interval rewinds, active=' + activeUIs(), p);
+      await idle();
+      await sleep(300);
+      return p.concat(checkRest(4));
+    });
+
+    await test('Повтор клавиши (key repeat) не шагает', async function () {
+      var p = [], s0 = count('transitionstart');
+      await sleep(250);
+      key('ArrowUp', { repeat: true }); key('PageUp', { repeat: true });
+      await sleep(400);
+      assert(count('transitionstart') === s0, 'repeat key caused a step', p);
+      return p;
+    });
+
+    await test('Свайп вверх 4 → 5, свайп вниз 5 → 4, короткий свайп игнорируется', async function () {
+      var p = [];
+      await swipe(180);
+      await busy(); await idle(); await sleep(300);
+      p = p.concat(checkRest(5));
+      await sleep(250);
+      await swipe(-180);
+      await busy(); await idle(); await sleep(300);
+      p = p.concat(checkRest(4));
+      var s0 = count('transitionstart');
+      await sleep(250);
+      await swipe(18);
+      await sleep(500);
+      assert(count('transitionstart') === s0, 'short swipe triggered a step', p);
+      return p;
+    });
+
+    await test('Назад PageUp 4 → 3 → 2 (стык через растворение) → Space+Shift 2 → 1', async function () {
+      var p = [];
+      key('PageUp'); await busy(); await idle(); await sleep(250);
+      p = p.concat(checkRest(3));
+      key('ArrowLeft'); await busy(); await idle(); await sleep(250);
+      p = p.concat(checkRest(2));
+      key(' ', { shiftKey: true }); await busy(); await idle(); await sleep(250);
+      p = p.concat(checkRest(1));
+      await sleep(800);
+      assert(R.dataset.poster === 'on' && +W.getComputedStyle(D.getElementById('poster')).opacity === 1, 'poster did not come back on scene 1', p);
+      assert(uiVisible(1), 'scene 1 UI not visible', p);
+      return p;
+    });
+
+    await test('Упор на сцене 1: назад не едет', async function () {
+      var p = [], s0 = count('transitionstart');
+      wheel(-120); await sleep(250); key('ArrowUp'); await sleep(250); await swipe(-200); await sleep(400);
+      assert(count('transitionstart') === s0, 'moved before the first scene', p);
+      return p.concat(checkRest(1));
+    });
+
+    await test('Счётчик и видимость блоков на каждой сцене (1 → 5 стрелкой →)', async function () {
+      var p = [];
+      for (var n = 2; n <= 5; n++) {
+        await sleep(250);
+        key('ArrowRight'); await busy(); await idle(); await sleep(250);
+        p = p.concat(checkRest(n).map(function (x) { return 'scene ' + n + ': ' + x; }));
+        var fill = W.getComputedStyle(D.getElementById('counterFill')).transform;
+        assert(fill !== 'none', 'counter fill missing', p);
+        for (var k = 1; k <= 5; k++) if (k !== n && uiVisible(k)) p.push('scene ' + k + ' UI visible at scene ' + n);
+      }
+      return p;
+    });
+
+    await test('Анимация ухода UI ≈ 0.35 с', async function () {
+      var p = [];
+      await sleep(250);
+      key('ArrowUp'); await busy();
+      var el = D.querySelector('.scene-ui[data-ui="5"]');
+      assert(el.classList.contains('is-leaving'), 'leaving class not set', p);
+      var dur = W.getComputedStyle(el.querySelector('[data-r]')).transitionDuration.split(',')[0];
+      assert(Math.abs(parseFloat(dur) - 0.35) < 0.051, 'leave duration ' + dur, p);
+      await idle(); await sleep(250);
+      return p.concat(checkRest(4));
+    });
+
+    await test('data-атрибуты на <html>', async function () {
+      var p = [];
+      ['scene', 'state', 'direction'].forEach(function (k) { assert(R.hasAttribute('data-' + k), 'missing data-' + k, p); });
+      return p.length ? p : 'scene=' + R.dataset.scene + ' state=' + R.dataset.state + ' direction=' + R.dataset.direction;
+    });
+
+    await test('Каждый интервал сцены ≈ 5 с (1×)', async function () {
+      var p = [], f = events.filter(function (e) { return e.type === 'transitionend' && e.detail.direction === 'forward'; });
+      var ms = f.map(function (e) { return e.detail.ms; });
+      ms.forEach(function (m, i) { assert(m > 4300 && m < 6500, 'forward interval #' + (i + 1) + ': ' + m + ' ms', p); });
+      assert(W.SCENES_CONFIG.playbackRate === 1, 'playbackRate ' + W.SCENES_CONFIG.playbackRate, p);
+      return p.length ? p : 'intervals: ' + ms.join(', ') + ' ms';
+    });
+
+    var dlg = D.getElementById('pcm');
+    function click(sel) { var el = typeof sel === 'string' ? D.querySelector(sel) : sel; el.click(); return el; }
+
+    await test('Поп-ап «О нас» из шапки: открывается, скролл и клавиши не листают сцены', async function () {
+      var p = [], s0 = count('transitionstart'), sc = scene();
+      click('[data-pop="about"]');
+      await until(function () { return dlg.open; }, 2000, 'dialog open');
+      assert(/Аликанте/.test(dlg.textContent) && /OEM/.test(dlg.textContent), 'about content missing', p);
+      assert(D.querySelector('[data-pop="about"]').getAttribute('aria-expanded') === 'true', 'nav aria-expanded', p);
+      await sleep(250); wheel(120); await sleep(250); key('ArrowDown'); await sleep(400);
+      assert(count('transitionstart') === s0 && scene() === sc, 'page navigated behind the pop-up', p);
+      return p;
+    });
+
+    await test('Вкладки поп-апа: Преимущества / Услуги (кроме кузовной покраски) / Контакты', async function () {
+      var p = [];
+      click(dlg.querySelector('[data-tab="advantages"]'));
+      var t = dlg.textContent;
+      ['3D Diag', 'Дилерское оборудование', 'OEM', 'шеф-механик', 'Гарантия'].forEach(function (w) { assert(t.indexOf(w) >= 0, 'advantages: missing «' + w + '»', p); });
+      click(dlg.querySelector('[data-tab="services"]'));
+      t = dlg.querySelector('[data-panel="services"]').textContent;
+      ['ТО', 'масла', 'жидкостей', 'диагностика', 'электроники', 'ходовой', 'Тормозная', 'Чип-тюнинг', 'кроме кузовной покраски'].forEach(function (w) { assert(t.indexOf(w) >= 0, 'services: missing «' + w + '»', p); });
+      click(dlg.querySelector('[data-tab="contacts"]'));
+      t = dlg.querySelector('[data-panel="contacts"]').textContent;
+      ["Torreto's Garage", 'Calle de la Cruz del Sur, 14', '03006 Alicante', '+34 637 95 83 63', 'WhatsApp', 'График', '09:00 – 20:00', 'Сб – Вс', 'выходной'].forEach(function (w) { assert(t.indexOf(w) >= 0, 'contacts: missing «' + w + '»', p); });
+      var wa = dlg.querySelector('.pcm__wa');
+      assert(wa && wa.getAttribute('href') === 'https://wa.me/34637958363', 'WhatsApp link: ' + (wa && wa.getAttribute('href')), p);
+      assert(dlg.querySelector('[data-panel="contacts"] a[href="tel:+34637958363"]'), 'tel: link missing', p);
+      assert(D.querySelector('.foot a[href="https://wa.me/34637958363"]') && /637 95 83 63/.test(D.querySelector('.foot').textContent), 'footer contacts missing', p);
+      /* booking form refuses a weekend date */
+      var f = dlg.querySelector('#pcmForm');
+      f.elements.name.value = 'Test'; f.elements.phone.value = '+34 600';
+      var sat = new Date(); sat.setDate(sat.getDate() + ((6 - sat.getDay() + 7) % 7 || 7));
+      f.elements.date.value = sat.getFullYear() + '-' + String(sat.getMonth() + 1).padStart(2, '0') + '-' + String(sat.getDate()).padStart(2, '0');
+      click(dlg.querySelector('.pcm__send'));
+      var note = dlg.querySelector('#pcmNote');
+      assert(!note.hidden && note.dataset.kind === 'err' && /суббот/i.test(note.textContent), 'weekend date accepted: ' + note.textContent, p);
+      assert(dlg.querySelector('#pcmForm'), 'booking form missing', p);
+      click(dlg.querySelector('[data-close]'));
+      await until(function () { return !dlg.open; }, 2000, 'dialog closed');
+      return p;
+    });
+
+    await test('Кнопка записи открывает контакты с формой; пустая форма не отправляется', async function () {
+      var p = [];
+      click('.book');
+      await until(function () { return dlg.open; }, 2000, 'dialog open');
+      assert(dlg.querySelector('[data-tab="contacts"]').getAttribute('aria-selected') === 'true', 'contacts tab not selected', p);
+      assert(D.activeElement && D.activeElement.name === 'name', 'name field not focused', p);
+      click(dlg.querySelector('.pcm__send'));
+      var note = dlg.querySelector('#pcmNote');
+      assert(!note.hidden && note.dataset.kind === 'err', 'empty form passed validation', p);
+      click(dlg.querySelector('[data-close]'));
+      await until(function () { return !dlg.open; }, 2000, 'dialog closed');
+      return p;
+    });
+
+    await test('Язык [ ES | RU ]: мгновенно, без перезагрузки — страница и поп-апы', async function () {
+      var p = [];
+      W.__noReload = 1;
+      var ttl = D.querySelector('.scene-ui.is-active .ttl__a'), ru = ttl.textContent;
+      click('.lang [data-lang="es"]');
+      assert(R.lang === 'es', 'html lang=' + R.lang, p);
+      assert(ttl.textContent !== ru, 'scene title not translated: ' + ttl.textContent, p);
+      assert(D.querySelector('[data-pop="about"]').textContent === 'Nosotros', 'nav: ' + D.querySelector('[data-pop="about"]').textContent, p);
+      assert(D.querySelector('.cats li').textContent === 'Precisión', 'categories not translated', p);
+      click('[data-pop="services"]');
+      await until(function () { return dlg.open; }, 2000, 'dialog open');
+      assert(/excepto pintura de carrocería/.test(dlg.textContent), 'pop-up not in Spanish', p);
+      click(dlg.querySelector('[data-lang="ru"]'));
+      assert(R.lang === 'ru' && /кроме кузовной покраски/.test(dlg.textContent), 'pop-up did not switch back to RU', p);
+      click(dlg.querySelector('[data-close]'));
+      await until(function () { return !dlg.open; }, 2000, 'dialog closed');
+      assert(ttl.textContent === ru && D.querySelector('[data-pop="about"]').textContent === 'О нас', 'page not restored to RU', p);
+      assert(W.__noReload === 1, 'page reloaded', p);
+      return p;
+    });
+
+    await test('Matrix LED NIGHT/DAY: тема меняется в шапке, панелях, текстах и поп-апе; выбор сохраняется', async function () {
+      var p = [];
+      function lum(css) {
+        var m = css.match(/[\d.]+/g); if (!m) return 0;
+        var c = m.slice(0, 3).map(function (v) { v = v / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+      }
+      function cs(sel, prop) { var el = D.querySelector(sel); return el ? W.getComputedStyle(el)[prop] : ''; }
+      assert(R.dataset.led !== 'day', 'should start in night', p);
+      var nightTitle = lum(cs('.scene-ui.is-active .ttl__a', 'color'));
+      click('#ledToggle');
+      assert(R.dataset.led === 'day', 'data-led=' + R.dataset.led, p);
+      assert(D.getElementById('ledToggle').getAttribute('aria-pressed') === 'true', 'aria-pressed', p);
+      await sleep(900);
+      var band = W.getComputedStyle(D.querySelector('.hdr__band')).backgroundImage.match(/rgba?\([^)]+\)/);
+      assert(band && lum(band[0]) > 0.6, 'header band not light: ' + (band && band[0]), p);
+      assert(lum(cs('.nav__a', 'color')) < 0.05, 'menu text not dark: ' + cs('.nav__a', 'color'), p);
+      assert(nightTitle > 0.8 && lum(cs('.scene-ui.is-active .ttl__a', 'color')) < 0.05, 'title colour did not flip', p);
+      var hud = D.querySelector('.scene-ui.is-active .hud, .scene-ui.is-active .svc, .scene-ui.is-active .blueprint');
+      if (hud) { var hb = W.getComputedStyle(hud).backgroundImage.match(/rgba?\([^)]+\)/); assert(hb && lum(hb[0]) > 0.6, 'panel not light', p); }
+      assert(lum(cs('.scene-ui.is-active .stat b', 'color')) < 0.05, 'card title not dark', p);
+      var saved = null; try { saved = W.localStorage.getItem('torreto.theme'); } catch (e) {}
+      assert(saved === 'day', 'not saved in localStorage: ' + saved, p);
+      click('[data-pop="advantages"]');
+      await until(function () { return dlg.open; }, 2000, 'dialog open');
+      await sleep(300);
+      var fb = W.getComputedStyle(dlg.querySelector('.pcm__frame')).backgroundImage.match(/rgba?\([^)]+\)|#[0-9a-f]{6}/gi);
+      var ink = W.getComputedStyle(dlg.querySelector('.pcm__t')).color;
+      assert(lum(ink) < 0.05, 'pop-up text not dark: ' + ink, p);
+      assert(fb && fb.some(function (c) { return lum(c) > 0.6; }), 'pop-up surface not light', p);
+      click(dlg.querySelector('[data-close]'));
+      await until(function () { return !dlg.open; }, 2000, 'dialog closed');
+      /* persistence: reload the page — day must come back before the engine even starts */
+      await load('?nointro');
+      await until(function () { return R.dataset.state === 'idle'; }, 15000, 'idle after reload');
+      assert(R.dataset.led === 'day', 'theme not restored after reload: ' + R.dataset.led, p);
+      click('#ledToggle');
+      assert(R.dataset.led === 'night' && W.localStorage.getItem('torreto.theme') === 'night', 'switch back to night failed', p);
+      return p;
+    });
+
+    await test('Типографика: естественный регистр, без text-transform: uppercase, шрифт Inter 600/700', async function () {
+      var p = [];
+      var els = D.querySelectorAll('.nav__a, .ttl__a, .ttl__b, .pill__t, .stat b, .stat span, .hud__h, .cats li, .book__cta, .status__txt');
+      Array.prototype.forEach.call(els, function (el) {
+        var cs = W.getComputedStyle(el), t = el.textContent.trim();
+        if (cs.textTransform === 'uppercase') p.push('uppercase: ' + t);
+        if (/[A-ZА-ЯЁ]{4,}/.test(t) && t === t.toUpperCase() && !/^(OEM|ECU|DTC|VIP|360°|100%)/.test(t)) p.push('all caps text: ' + t);
+      });
+      var ttl = W.getComputedStyle(D.querySelector('.ttl'));
+      assert(/Inter/.test(ttl.fontFamily) && +ttl.fontWeight >= 700, 'headline font ' + ttl.fontFamily + ' ' + ttl.fontWeight, p);
+      var pill = W.getComputedStyle(D.querySelector('.pill__t'));
+      assert(/Inter/.test(pill.fontFamily) && +pill.fontWeight >= 600, 'sub-head font ' + pill.fontFamily + ' ' + pill.fontWeight, p);
+      assert(D.fonts.check('700 20px Inter'), 'Inter 700 not loaded', p);
+      return p;
+    });
+
+    await test('Звук High-End: переключатель и колесо громкости над модулем (сцены не листаются)', async function () {
+      var p = [], sc = scene();
+      click('#soundToggle');
+      assert(R.dataset.sound === 'on' && D.querySelector('.snd__state').textContent === 'On', 'sound not on', p);
+      var snd = D.getElementById('soundToggle');
+      snd.dispatchEvent(new W.WheelEvent('wheel', { deltaY: -100, bubbles: true, cancelable: true }));
+      await sleep(120);
+      assert(/On \d+%/.test(D.querySelector('.snd__state').textContent), 'volume readout: ' + D.querySelector('.snd__state').textContent, p);
+      await sleep(400);
+      assert(scene() === sc && count('transitionstart') >= 0 && R.dataset.state === 'idle', 'wheel over the module moved the page', p);
+      click('#soundToggle');
+      assert(R.dataset.sound === 'off', 'sound not off', p);
+      return p;
+    });
+
+    window.__AUTOTEST.done = true;
+    window.__AUTOTEST.passed = results.every(function (r) { return r.ok; });
+    window.__AUTOTEST.engineStats = W.TorretoEngine.stats;
+    sum.innerHTML += ' · ' + (window.__AUTOTEST.passed ? '<b style="color:var(--ok)">ВСЁ ЗЕЛЁНОЕ</b>' : '<b style="color:var(--bad)">ЕСТЬ ОШИБКИ</b>');
+  }
+  main().catch(function (e) { results.push({ name: 'runner', ok: false, detail: String(e) }); window.__AUTOTEST.done = true; window.__AUTOTEST.passed = false; });
+})();
+</script>
+</body>
+</html>

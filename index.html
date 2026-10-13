@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="ru" data-scene="1" data-state="boot" data-direction="none" data-led="night" data-sound="off">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Torreto's Garage</title>
+<meta name="description" content="Torreto's Garage, Alicante — сервис спортивных автомобилей: диагностика, тормоза и подвеска, регламентное обслуживание.">
+<link rel="icon" href="assets/logo-badge.png">
+<meta name="theme-color" content="#0a0d18" id="themeColor">
+<script>
+  /* theme before first paint (no flash): ?theme=day|night › saved choice › night */
+  (function () {
+    var t = null;
+    try { t = new URLSearchParams(location.search).get('theme') || localStorage.getItem('torreto.theme'); } catch (e) {}
+    if (t === 'day') { document.documentElement.dataset.led = 'day'; document.getElementById('themeColor').content = '#e9ecef'; }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="preload" as="image" href="top.jpeg" fetchpriority="high">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-diamond" viewBox="0 0 24 24"><path d="M6.5 4h11l3.5 5-9 11L3 9z M3 9h18 M9.5 4 8 9l4 11 4-11-1.5-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-nodes" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="7" r="2"/><circle cx="12" cy="7" r="2"/><circle cx="18" cy="7" r="2"/><circle cx="6" cy="13" r="2"/><circle cx="18" cy="13" r="2"/><circle cx="12" cy="18" r="2"/><path d="M8 7h2m4 0h2M6 9v2m12-2v2M7.5 14.5l3 2.5m6-2.5-3 2.5"/></g></symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M12 8v8M8 12h8"/></g></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></g></symbol>
+    <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.5 3.5a4.5 4.5 0 0 0-4.2 6.1L3.8 16a1.6 1.6 0 0 0 0 2.3l1.9 1.9a1.6 1.6 0 0 0 2.3 0l6.4-6.5a4.5 4.5 0 0 0 6.1-4.2l-2.8 2.8-3.3-.9-.9-3.3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></g></symbol>
+    <symbol id="i-led" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="5" cy="8" r="1.4"/><circle cx="9.7" cy="8" r="1.4"/><circle cx="14.3" cy="8" r="1.4"/><circle cx="19" cy="8" r="1.4"/><circle cx="5" cy="12" r="1.4"/><circle cx="9.7" cy="12" r="1.4"/><circle cx="14.3" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="5" cy="16" r="1.4"/><circle cx="9.7" cy="16" r="1.4"/><circle cx="14.3" cy="16" r="1.4"/><circle cx="19" cy="16" r="1.4"/></g><path d="M4 19.5c5 1.6 11 1.6 16 0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<!-- ───────────── VIDEO LAYER (engine injects <video> elements) ───────────── -->
+<div class="video-layer" id="videoLayer" aria-hidden="true">
+  <!-- sharp still for scene 1 — visible from the first paint, dissolves into the video on the first scroll -->
+  <div class="poster is-on" id="poster"><img src="top.jpeg" alt="" width="1152" height="768" fetchpriority="high" decoding="async"></div>
+</div>
+<div class="video-shade" aria-hidden="true"></div>
+<div class="theme-sweep" id="themeSweep" aria-hidden="true"></div>
+
+<!-- ───────────── CHROME: declared once, never re-created ───────────── -->
+<header class="hdr" id="hdr">
+  <div class="hdr__band" aria-hidden="true"></div>
+  <div class="stage hdr__stage">
+    <!-- menu opens the cockpit pop-ups (popups.js) -->
+    <nav class="nav ff-b" aria-label="Основное меню" style="--x:37.5;--y:54.7;--f:11.5">
+      <a class="nav__a" href="#about" data-pop="about" aria-haspopup="dialog">О нас</a>
+      <a class="nav__a" href="#advantages" data-pop="advantages" aria-haspopup="dialog">Преимущества</a>
+      <a class="nav__a" href="#services" data-pop="services" aria-haspopup="dialog">Услуги</a>
+      <a class="nav__a" href="#contacts" data-pop="contacts" aria-haspopup="dialog">Контакты</a>
+    </nav>
+
+    <div class="status" style="--x:422;--y:37;--h:35" role="status">
+      <span class="status__dot" aria-hidden="true"></span>
+      <span class="status__txt ff-b">Alicante Unit · Online</span>
+    </div>
+
+    <!-- Tachometer logo -->
+    <a class="tach" href="#hero" data-walk="1" aria-label="Torreto's Garage — на главную">
+      <svg class="tach__ring" viewBox="-60 -60 120 120" aria-hidden="true">
+        <defs>
+          <radialGradient id="tachDisk" r="0.5"><stop offset="0.6" stop-color="#121521"/><stop offset="1" stop-color="#07080e"/></radialGradient>
+          <linearGradient id="tachArc" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f39a2b"/><stop offset="1" stop-color="#ffb347"/></linearGradient>
+        </defs>
+        <circle r="51.7" fill="url(#tachDisk)" stroke="rgba(255,255,255,.14)" stroke-width=".6"/>
+        <g class="tach__ticks" id="tachTicks"></g>
+        <circle class="tach__red" r="40.5" pathLength="360"/>
+        <circle class="tach__arc" r="40.5" pathLength="360"/>
+        <g class="tach__needle"><circle cx="0" cy="-40.5" r="2.4"/></g>
+        <text class="tach__sport" x="0" y="45.5" text-anchor="middle">SPORT+</text>
+      </svg>
+      <img class="tach__badge" src="assets/logo-badge.png" alt="Torreto's garage — Taller multimarcas" width="192" height="192">
+    </a>
+
+    <!-- header right group: shifted left vs. the mockup to make room for the language switch -->
+    <button class="led box" type="button" id="ledToggle" data-theme-toggle data-pc-skip style="--x:780;--y:33.7;--w:153;--h:42" aria-pressed="false" aria-label="Matrix LED: ночь / день">
+      <span class="ico-c" style="--x:6.75;--y:6.75;--d:28.5"><svg><use href="#i-led"/></svg></span>
+      <span class="t ff-b k-orange cap" style="--x:43.4;--y:15;--f:8">Matrix LED</span>
+      <span class="t ff-m led__mode" style="--x:43.4;--y:26.8;--f:9.1"><b class="led__n">Night</b> <i>/</i> <b class="led__d">Day</b></span>
+      <span class="led__sw" style="--x:111.6;--y:13.2"><span class="led__knob"></span></span>
+    </button>
+
+    <div class="lang box" role="group" aria-label="Язык / Idioma" data-pc-skip style="--x:939;--y:33.7;--w:76;--h:42">
+      <span class="lang__b" aria-hidden="true">[</span>
+      <button type="button" class="lang__o" data-lang="es" aria-pressed="false" lang="es">ES</button>
+      <span class="lang__sep" aria-hidden="true">|</span>
+      <button type="button" class="lang__o" data-lang="ru" aria-pressed="true" lang="ru">RU</button>
+      <span class="lang__b" aria-hidden="true">]</span>
+    </div>
+
+    <button class="snd box" type="button" id="soundToggle" data-sound-toggle data-pc-skip style="--x:1021;--y:33.7;--w:110;--h:42" aria-pressed="false" aria-label="High-end sound: включить / выключить">
+      <span class="ico-c snd__spk" style="--x:6.75;--y:6.75;--d:28.5" aria-hidden="true"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="1" fill="currentColor"/></g><g fill="currentColor" class="snd__dots"></g></svg></span>
+      <span class="t ff-b cap snd__lbl" style="--x:41;--y:14.3;--f:7.6">High-End <span class="snd__eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></span>
+      <span class="t ff-m snd__val" style="--x:41;--y:28;--f:9.4"><b class="snd__state">Off</b> · 432Hz</span>
+    </button>
+
+    <!-- phone header: book + menu (the menu opens the cockpit pop-up with all sections) -->
+    <div class="m-act">
+      <button class="m-btn m-btn--theme" type="button" data-theme-toggle aria-pressed="false" aria-label="Matrix LED: ночь / день"><svg viewBox="0 0 24 24" class="i-moon"><path d="M19.5 14.6A7.8 7.8 0 0 1 9.4 4.5a7.8 7.8 0 1 0 10.1 10.1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="i-sun"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></g></svg></button>
+      <button class="m-btn m-btn--snd" type="button" data-sound-toggle aria-pressed="false" aria-label="High-end sound: включить / выключить"><svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path class="m-snd__w" d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18 7a7 7 0 0 1 0 10"/></g></svg></button>
+      <button class="m-btn m-btn--book" type="button" data-book aria-label="Записаться"><svg><use href="#i-calendar"/></svg></button>
+      <button class="m-btn" type="button" data-pop="about" aria-label="Меню" aria-haspopup="dialog"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M10 17h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+    </div>
+
+    <button class="book box" type="button" data-book style="--x:1136;--y:30;--w:265.6;--h:49.5">
+      <span class="knob" style="--x:7.75;--y:7.5;--d:34.5" aria-hidden="true"><i></i></span>
+      <span class="t ff-b k-orange cap" style="--x:53.4;--y:17.6;--f:8">Drive Select · Sport+</span>
+      <span class="t ff-b book__cta" style="--x:53.4;--y:30.7;--f:12.4"><span>Записаться / Book service</span>&nbsp;&nbsp;&nbsp;→</span>
+    </button>
+  </div>
+</header>
+
+<aside class="stage chrome" aria-hidden="false">
+  <button class="ico-btn" type="button" style="--x:37.5;--y:211.5;--d:39" aria-label="Стандарт качества"><svg><use href="#i-diamond"/></svg></button>
+  <button class="ico-btn" type="button" style="--x:37.5;--y:262.5;--d:39" aria-label="Сервисная сеть"><svg><use href="#i-nodes"/></svg></button>
+
+  <ul class="cats" aria-hidden="true">
+    <li>Precision</li><li>Performance</li><li>Control</li><li>Power</li><li>Integrity</li><li>Service</li>
+  </ul>
+  <div class="cats__line" aria-hidden="true"></div>
+
+  <!-- footer strip: data from content.config.js (filled by popups.js) -->
+  <footer class="foot" data-pc-skip>
+    <span class="foot__l"><b data-c="name">Torreto's Garage</b> · <a data-c="address" href="#" target="_blank" rel="noopener">Calle de la Cruz del Sur, 14, 03006 Alicante</a></span>
+    <span class="foot__l"><a data-c="phone" href="tel:+34637958363">+34 637 95 83 63</a> · <a data-c="wa" href="https://wa.me/34637958363" target="_blank" rel="noopener">WhatsApp</a> · <span data-c="hours">Пн–Пт 09:00–20:00 · Сб–Вс выходной</span></span>
+  </footer>
+
+  <div class="cue" aria-hidden="true"><span class="cue__t cue__t--d">Scroll</span><span class="cue__t cue__t--m">Swipe</span><i></i></div>
+
+  <div class="counter" id="counter" aria-live="polite">
+    <span class="t ff-b counter__n" id="counterNum" style="--x:37.4;--y:774;--f:25">01</span>
+    <span class="counter__track"><span class="counter__fill" id="counterFill"></span></span>
+    <span class="sr-only" id="counterSr">Блок 1 из 5</span>
+  </div>
+</aside>
+
+<!-- ───────────── SCENE UI BLOCKS ───────────── -->
+<main class="stage scenes" id="scenes">
+
+  <!-- 01 HERO -->
+  <section class="scene-ui" data-ui="1" aria-label="Эталон качества" hidden>
+    <div class="pill box" data-r style="--i:0;--x:37.5;--y:147;--h:52.5"><span class="ico-c" style="--x:6.7;--y:6.75;--d:39"><svg><use href="#i-diamond"/></svg></span><span class="pill__t ff-b">Torreto's Standard</span></div>
+    <h1 class="ttl" data-r style="--i:1"><span class="ttl__a">Эталон</span><span class="ttl__b">качества.</span></h1>
+    <div class="hud box" data-r style="--i:2;--x:315.7;--y:147;--w:246.8;--h:178">
+      <span class="t ff-m k-orange" style="--x:15;--y:20.6;--f:8">HUD·01</span>
+      <span class="t ff-b hud__h" style="--x:54.8;--y:20.6;--f:10.5">Chassis scan</span>
+      <span class="t ff-b live r" style="--r:15.8;--y:20.6;--f:8.6">Live</span>
+      <svg class="chassis" viewBox="870 120 495 192" style="--x:40.5;--y:36.7;--w:185.6;--h:72" aria-hidden="true">
+        <defs><linearGradient id="scanG" x1="0" x2="1"><stop offset="0" stop-color="#f39a2b" stop-opacity="0"/><stop offset="1" stop-color="#f39a2b" stop-opacity=".55"/></linearGradient></defs>
+        <path d="M950 288h270c70 0 125-40 133-73-8-33-63-72-133-72H950c-38 0-68 32-68 72s30 73 68 73z" class="ln"/>
+        <rect x="1042" y="168" width="168" height="96" rx="26" class="ln ln--dim"/>
+        <path d="M886 215h468M970 152v128M1242 152v128" class="ln ln--dash"/>
+        <g class="wheel"><rect x="946" y="130" width="48" height="20" rx="4"/><rect x="1218" y="130" width="48" height="20" rx="4"/><rect x="946" y="282" width="48" height="20" rx="4"/><rect x="1218" y="282" width="48" height="20" rx="4"/></g>
+        <g class="scan"><rect x="1105" y="124" width="90" height="184" fill="url(#scanG)"/><rect x="1192" y="124" width="5" height="184" fill="#f39a2b"/></g>
+        <g fill="#f39a2b"><circle cx="970" cy="152" r="5.5"/><circle cx="1242" cy="152" r="5.5"/><circle cx="970" cy="280" r="5.5"/><circle cx="1242" cy="280" r="5.5"/></g>
+      </svg>
+      <span class="hud__rule" style="--y:119.6"></span>
+      <span class="t ff-b hud__k" style="--x:15;--y:131.6;--f:8.8">Torsional rigidity</span>
+      <span class="t ff-m k-green r" style="--r:15.8;--y:131.6;--f:8.8">100% · OK</span>
+      <span class="hud__rule" style="--y:147"></span>
+      <span class="t ff-b hud__k" style="--x:15;--y:159;--f:8.8">Wheel alignment</span>
+      <span class="t ff-m r" style="--r:15.8;--y:159;--f:8.8">±0.02°</span>
+    </div>
+    <ul class="stats">
+      <li class="stat box" data-r style="--i:3"><b>100%</b><span>Precise Maintenance</span></li>
+      <li class="stat box" data-r style="--i:4"><b>Alicante</b><span>Main Garage Unit</span></li>
+      <li class="stat box" data-r style="--i:5"><b>OEM</b><span>Original Components</span></li>
+      <li class="stat box" data-r style="--i:6"><b>Expert</b><span>Master Certified</span></li>
+    </ul>
+  </section>
+
+  <!-- 02 ENGINEERING -->
+  <section class="scene-ui" data-ui="2" aria-label="Безкомпромиссный сервис" hidden>
+    <div class="pill box" data-r style="--i:0;--x:37.5;--y:147;--h:52.5"><span class="ico-c" style="--x:6.7;--y:6.75;--d:39"><svg><use href="#i-scan"/></svg></span><span class="pill__t ff-b">Behind the Performance</span></div>
+    <h2 class="ttl" data-r style="--i:1"><span class="ttl__a">Безкомпромиссный</span><span class="ttl__b">сервис.</span></h2>
+    <div class="blueprint box" data-r style="--i:2;--x:352.5;--y:324.4;--w:735;--h:306.4">
+      <svg viewBox="10 5 1960 817" aria-label="Схема двигателя Flat-6 4.0 L">
+        <g class="bp-corner"><path d="M38 70V32h40M1902 32h40v38M38 758v38h40M1902 796h40v-38"/></g>
+        <g class="bp-ln">
+          <path d="M150 64h1680M150 54v20M1830 54v20"/>
+          <path class="bp-dash" d="M90 424h1800M870 302v42M990 302v42M1110 302v42M990 504v176"/>
+          <g id="piston"><rect x="836" y="100" width="68" height="60" rx="4"/><path d="M836 115h68M836 124h68M858 160l6 106M882 160l-6 106"/><circle cx="870" cy="284" r="18"/></g>
+          <use href="#piston" x="120"/><use href="#piston" x="240"/>
+          <rect x="810" y="344" width="360" height="160" rx="20"/><path d="M810 424h360"/>
+          <circle cx="870" cy="464" r="12"/><circle cx="990" cy="464" r="12"/><circle cx="1110" cy="464" r="12"/>
+          <rect x="150" y="334" width="80" height="180" rx="18"/><path d="M166 364h48M166 404h48M166 444h48M166 484h48"/>
+          <rect x="290" y="324" width="140" height="200" rx="8"/>
+          <circle cx="330" cy="368" r="10"/><circle cx="390" cy="368" r="10"/><circle cx="330" cy="424" r="10"/><circle cx="390" cy="424" r="10"/><circle cx="330" cy="480" r="10"/><circle cx="390" cy="480" r="10"/>
+          <rect x="490" y="334" width="240" height="180" rx="10"/><circle cx="550" cy="424" r="25"/><circle cx="610" cy="424" r="25"/><circle cx="670" cy="424" r="25"/>
+          <rect x="1250" y="334" width="240" height="180" rx="10"/><circle cx="1310" cy="424" r="25"/><circle cx="1370" cy="424" r="25"/><circle cx="1430" cy="424" r="25"/>
+          <rect x="1550" y="324" width="140" height="200" rx="8"/>
+          <circle cx="1590" cy="368" r="10"/><circle cx="1650" cy="368" r="10"/><circle cx="1590" cy="424" r="10"/><circle cx="1650" cy="424" r="10"/><circle cx="1590" cy="480" r="10"/><circle cx="1650" cy="480" r="10"/>
+          <rect x="1750" y="334" width="80" height="180" rx="18"/><path d="M1766 364h48M1766 404h48M1766 444h48M1766 484h48"/>
+          <path d="M622 585h788"/><circle cx="590" cy="585" r="32"/><circle cx="590" cy="585" r="12"/>
+          <rect x="714" y="564" width="32" height="42" rx="4"/><rect x="814" y="564" width="32" height="42" rx="4"/><rect x="914" y="564" width="32" height="42" rx="4"/><rect x="1014" y="564" width="32" height="42" rx="4"/><rect x="1114" y="564" width="32" height="42" rx="4"/><rect x="1214" y="564" width="32" height="42" rx="4"/>
+          <ellipse cx="1433" cy="585" rx="18" ry="64"/><ellipse cx="1433" cy="585" rx="7" ry="32"/>
+          <path d="M810 684h360l-40 84H850z M870 723h240"/>
+        </g>
+        <g class="bp-lead"><path d="M990 128l240 9M455 248 360 424M1250 585l230 47M684 725l306 3"/></g>
+        <g class="bp-hot"><circle cx="990" cy="128" r="36"/><circle cx="360" cy="424" r="36"/><circle cx="1250" cy="585" r="36"/><circle cx="990" cy="728" r="36"/></g>
+        <g class="bp-dot"><circle cx="990" cy="128" r="9"/><circle cx="360" cy="424" r="9"/><circle cx="1250" cy="585" r="9"/><circle cx="990" cy="728" r="9"/>
+          <circle cx="990" cy="128" r="18" class="o"/><circle cx="360" cy="424" r="18" class="o"/><circle cx="1250" cy="585" r="18" class="o"/><circle cx="990" cy="728" r="18" class="o"/></g>
+        <text class="bp-dim" x="990" y="49" text-anchor="middle">1 262 mm</text>
+        <g class="bp-chip"><rect x="1230" y="108" width="412" height="57" rx="28.5"/><text x="1252" y="145"><tspan class="n">01</tspan><tspan dx="18">Pistons · forged Ø102 mm</tspan></text></g>
+        <g class="bp-chip"><rect x="70" y="197" width="396" height="56" rx="28"/><text x="92" y="233"><tspan class="n">03</tspan><tspan dx="18">Cylinder head · 4V DOHC</tspan></text></g>
+        <g class="bp-chip"><rect x="1480" y="605" width="326" height="56" rx="28"/><text x="1502" y="641"><tspan class="n">02</tspan><tspan dx="18">Crankshaft · 4.0 L</tspan></text></g>
+        <g class="bp-chip"><rect x="330" y="697" width="354" height="56" rx="28"/><text x="352" y="733"><tspan class="n">04</tspan><tspan dx="18">Dry-sump oil system</tspan></text></g>
+        <text class="bp-fig" x="1922" y="742" text-anchor="end">Fig. 01 — Flat-6 4.0 L · exploded view</text>
+        <text class="bp-sub" x="1396" y="773">Scale 1:4 · Rev. B · Torreto's Lab</text>
+      </svg>
+    </div>
+    <ul class="stats">
+      <li class="stat box" data-r style="--i:3"><b style="letter-spacing:0">3D Diag</b><span>Computer Scanning</span></li>
+      <li class="stat box" data-r style="--i:4"><b>0 Logs</b><span>Zero Error Tolerance</span></li>
+      <li class="stat box" data-r style="--i:5"><b>ECU</b><span>Telemetry &amp; Tuning</span></li>
+      <li class="stat box" data-r style="--i:6"><b>Fluids</b><span>Official Homologation</span></li>
+    </ul>
+  </section>
+
+  <!-- 03 CONTROL -->
+  <section class="scene-ui" data-ui="3" aria-label="Абсолютный контроль" hidden>
+    <div class="pill box" data-r style="--i:0;--x:37.5;--y:147;--h:52.5"><span class="ico-c" style="--x:6.7;--y:6.75;--d:39"><svg><use href="#i-target"/></svg></span><span class="pill__t ff-b">Suspension &amp; Brakes</span></div>
+    <h2 class="ttl" data-r style="--i:1"><span class="ttl__a">Абсолютный</span><span class="ttl__b">контроль.</span></h2>
+    <svg class="wheel-ring" data-r style="--i:2" viewBox="0 0 1440 810" aria-hidden="true">
+      <circle cx="989.2" cy="510" r="56.2" class="wr-c"/>
+      <path class="wr-t" d="M989.2 449v10M989.2 561v10M928 510h10M1040.4 510h10"/>
+      <path class="wr-l" d="M1028.6 471 1095 436.5h30.7"/><circle cx="1028.6" cy="471" r="2.4" fill="#f39a2b"/>
+    </svg>
+    <div class="hud box" data-r style="--i:3;--x:1125.7;--y:335.2;--w:276;--h:184.5">
+      <span class="t ff-m k-orange" style="--x:15;--y:19.9;--f:8">HUD·03</span>
+      <span class="t ff-b hud__h" style="--x:51;--y:19.9;--f:10.5">Brake thermal</span>
+      <span class="t ff-b live r" style="--r:15;--y:19.9;--f:8.6">Live</span>
+      <span class="t ff-b temp" style="--x:14.2;--y:60.4;--f:43">420°C</span>
+      <span class="t ff-b hud__h" style="--x:128.2;--y:54;--f:10">Front left</span>
+      <span class="t ff-m hud__k" style="--x:128.2;--y:65;--f:8.8">CCB · Ø410 mm</span>
+      <span class="bar" style="--x:15;--y:93;--w:247.5;--p:.525"><i></i></span>
+      <span class="t ff-m hud__k" style="--x:15;--y:111.4;--f:8.4">0°</span>
+      <span class="t ff-m k-orange" style="--x:87;--y:111.4;--f:8.4">Optimal 350-650°C</span>
+      <span class="t ff-m hud__k r" style="--r:13;--y:111.4;--f:8.4">800°</span>
+      <span class="hud__rule" style="--y:126.4"></span>
+      <span class="t ff-b hud__k" style="--x:15;--y:138.4;--f:8.8">Pad wear</span>
+      <span class="t ff-m r" style="--r:15.5;--y:138.4;--f:8.8">92%</span>
+      <span class="hud__rule" style="--y:154"></span>
+      <span class="t ff-b hud__k" style="--x:15;--y:166;--f:8.8">Status</span>
+      <span class="t ff-m k-green r" style="--r:15.5;--y:166;--f:8.8">Optimal window</span>
+    </div>
+    <ul class="stats">
+      <li class="stat box" data-r style="--i:4"><b>Align</b><span>3D Geometry Setup</span></li>
+      <li class="stat box" data-r style="--i:5"><b>Brakes</b><span>High-Load Calibration</span></li>
+      <li class="stat box" data-r style="--i:6"><b>Safety</b><span>Track &amp; Street Standard</span></li>
+      <li class="stat box" data-r style="--i:7"><b>Rigor</b><span>Strict Protocol</span></li>
+    </ul>
+  </section>
+
+  <!-- 04 MAINTENANCE -->
+  <section class="scene-ui" data-ui="4" aria-label="Технический регламент" hidden>
+    <div class="pill box" data-r style="--i:0;--x:37.5;--y:147;--h:52.5"><span class="ico-c" style="--x:6.7;--y:6.75;--d:39"><svg><use href="#i-wrench"/></svg></span><span class="pill__t ff-b">Full Maintenance</span></div>
+    <h2 class="ttl" data-r style="--i:1"><span class="ttl__a">Технический</span><span class="ttl__b">регламент.</span></h2>
+    <div class="svc box" data-r style="--i:2;--x:38.2;--y:684.4;--w:587;--h:48.7">
+      <span class="t ff-m k-orange" style="--x:15;--y:17.2;--f:8">HUD·04</span>
+      <span class="t ff-b hud__h" style="--x:51;--y:17.2;--f:10.5">Scheduled service</span>
+      <span class="t ff-b live" style="--x:188.3;--y:17.2;--f:8.6">Live</span>
+      <span class="t ff-m hud__k" style="--x:15;--y:33.4;--f:8.8">30 000 km</span>
+      <span class="bar bar--o" style="--x:69;--y:32.8;--w:82;--p:.82"><i></i></span>
+      <span class="t ff-m k-orange" style="--x:159.4;--y:33.4;--f:8.8">82%</span>
+      <ul class="chips" style="--x:229;--y:14.2">
+        <li style="--w:80">Oil · Motul</li><li style="--w:64.5">Filters</li><li style="--w:86">Brake fluid</li><li class="is-due" style="--w:88.5">Spark plugs</li>
+      </ul>
+    </div>
+    <ul class="stats">
+      <li class="stat box" data-r style="--i:3"><b>Motul</b><span>Approved Lubricants</span></li>
+      <li class="stat box" data-r style="--i:4"><b>Express</b><span>Scheduled Pit-Stop</span></li>
+      <li class="stat box" data-r style="--i:5"><b>Filter</b><span>OEM Replacement</span></li>
+      <li class="stat box" data-r style="--i:6"><b>360°</b><span>Full Vehicle Check</span></li>
+    </ul>
+  </section>
+
+  <!-- 05 BOOKING -->
+  <section class="scene-ui" data-ui="5" aria-label="Запись на сервис" hidden>
+    <button class="pill pill--cta" type="button" data-book data-r style="--i:0;--x:37.1;--y:147.4;--h:53.2"><span class="ico-c" style="--x:6.4;--y:6.3;--d:40.6"><svg><use href="#i-calendar"/></svg></span><span class="pill__t ff-b">[ Забронировать визит → ]</span></button>
+    <h2 class="ttl" data-r style="--i:1"><span class="ttl__a">Твой автомобиль.</span><span class="ttl__b">Наш стандарт.</span></h2>
+    <div class="hud box" data-r style="--i:2;--x:37.9;--y:334.5;--w:246.3;--h:136">
+      <span class="t ff-m k-orange" style="--x:15;--y:19.9;--f:7.6">HUD·05</span>
+      <span class="t ff-b hud__h" style="--x:51;--y:19.9;--f:10.1">360° check</span>
+      <span class="t ff-b live r" style="--r:15;--y:19.9;--f:8">Live</span>
+      <span class="bar bar--g" style="--x:15.3;--y:36.3;--w:217.5;--p:1"><i></i></span>
+      <span class="hud__rule" style="--y:49.1"></span>
+      <span class="t ff-b hud__k" style="--x:15;--y:61.9;--f:8.8">Inspection points</span>
+      <span class="t ff-m r" style="--r:15;--y:61.9;--f:8.8">142 / 142</span>
+      <span class="hud__rule" style="--y:77.2"></span>
+      <span class="t ff-b hud__k" style="--x:15;--y:89.9;--f:8.8">DTC errors</span>
+      <span class="t ff-m k-green r" style="--r:15;--y:89.9;--f:8.8">0</span>
+      <span class="hud__rule" style="--y:105.4"></span>
+      <span class="t ff-b hud__k" style="--x:15;--y:117.4;--f:8.8">Status</span>
+      <span class="t ff-m k-green r" style="--r:15;--y:117.4;--f:8.8">Ready for pickup</span>
+    </div>
+    <div class="hud box" data-r style="--i:3;--x:1140.5;--y:334.8;--w:261.3;--h:169.2">
+      <span class="t ff-m k-orange" style="--x:15;--y:19.6;--f:7.6">HUD·05</span>
+      <span class="t ff-b hud__h" style="--x:51.2;--y:19.6;--f:10.3">Next slot</span>
+      <span class="t ff-b live r" style="--r:15;--y:19.6;--f:8">Live</span>
+      <span class="t ff-b slot" style="--x:14.5;--y:56.3;--f:32.3">Mon · 09:00</span>
+      <span class="hud__rule" style="--y:83.2"></span>
+      <span class="t ff-b hud__k" style="--x:15;--y:94.6;--f:8.8">Service bay</span>
+      <span class="t ff-m k-green r" style="--r:15;--y:94.6;--f:8.8">02 · Ready</span>
+      <span class="hud__rule" style="--y:110.7"></span>
+      <span class="t ff-b hud__k" style="--x:15;--y:122.7;--f:8.8">Concierge</span>
+      <span class="t ff-m r" style="--r:15;--y:122.7;--f:8.8">On call</span>
+      <span class="hud__rule" style="--y:138.1"></span>
+      <span class="t ff-b hud__k" style="--x:15;--y:150.1;--f:8.8">Lead time</span>
+      <span class="t ff-m r" style="--r:15;--y:150.1;--f:8.8">&lt; 24 h</span>
+    </div>
+    <!-- phones: contact card instead of the NEXT SLOT panel -->
+    <div class="hud hud--contact" data-r style="--i:3">
+      <p class="hc__h"><span class="k-orange ff-m">HUD·05</span><b class="ff-b">Contact</b><span class="live ff-b">Live</span></p>
+      <p class="hc__name ff-b" data-c="name">Torreto's Garage</p>
+      <a class="hc__row" data-c="address" href="#" target="_blank" rel="noopener">Calle de la Cruz del Sur, 14, 03006 Alicante</a>
+      <a class="hc__row hc__tel ff-m" data-c="phone" href="tel:+34637958363">+34 637 95 83 63</a>
+      <span class="hc__row ff-m" data-c="hours">Пн–Пт 09:00–20:00 · Сб–Вс выходной</span>
+      <a class="hc__wa ff-b" data-c="wa" href="https://wa.me/34637958363" target="_blank" rel="noopener"><span class="hc__dot"></span>WhatsApp</a>
+    </div>
+    <ul class="stats">
+      <li class="stat box" data-r style="--i:4"><b>Mon–Fri</b><span>Working Hours</span></li>
+      <li class="stat box" data-r style="--i:5"><b>Online</b><span>Instant Booking</span></li>
+      <li class="stat box" data-r style="--i:6"><b>VIP</b><span>Personal Concierge</span></li>
+      <li class="stat box" data-r style="--i:7"><b>Garage</b><span>Torreto's Unit</span></li>
+    </ul>
+  </section>
+</main>
+
+<!-- Cockpit pop-ups (content rendered by popups.js, RU / ES) -->
+<dialog class="pcm" id="pcm" aria-labelledby="pcmTitle"></dialog>
+
+<!-- Readable explanation instead of a black screen -->
+<div class="sys" id="sys" role="alert" hidden>
+  <div class="sys__card">
+    <p class="sys__k">Torreto's Garage · Engine</p>
+    <h1 class="sys__t" id="sysTitle">Движок не запустился</h1>
+    <div class="sys__b" id="sysBody"></div>
+  </div>
+</div>
+<noscript><div class="sys"><div class="sys__card"><p class="sys__k">Torreto's Garage · Engine</p><h1 class="sys__t">Нужен JavaScript</h1><div class="sys__b"><p>Этот сайт — видео-сценарий, которым управляет JavaScript. Включите его в настройках браузера и обновите страницу.</p></div></div></div></noscript>
+
+<script>
+  /* Pre-engine guard: if the engine never reports in, explain instead of a black screen. */
+  window.__bootGuard = setTimeout(function () {
+    if (document.documentElement.dataset.state === 'boot') {
+      var s = document.getElementById('sys');
+      document.getElementById('sysTitle').textContent = 'Движок не запустился';
+      document.getElementById('sysBody').innerHTML = '<p>Скрипты страницы не загрузились или упали при старте (engine.js / scenes.config.js).</p><p>Проверьте, что файлы лежат рядом с index.html, и откройте сайт через локальный сервер: <code>npm run serve</code> → <code>http://localhost:5173</code>.</p>';
+      s.hidden = false;
+      document.documentElement.dataset.state = 'error';
+    }
+  }, 6000);
+</script>
+<script src="scenes.config.js"></script>
+<script src="content.config.js"></script>
+<script src="i18n.js"></script>
+<script src="porsche-sfx.js"></script>
+<script src="engine.js"></script>
+<script src="popups.js"></script>
+</body>
+</html>

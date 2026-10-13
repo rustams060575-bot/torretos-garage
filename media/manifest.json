@@ -1,0 +1,58 @@
+{
+  "fps": 24,
+  "generated": "2026-10-12T07:02:03.964Z",
+  "sources": {
+    "1": {
+      "frames": 121,
+      "duration": 5.041666666666667,
+      "desktop": {
+        "forward": "media/1.mp4",
+        "reverse": "media/1.rev.mp4",
+        "frames": 121,
+        "width": 1280,
+        "height": 720,
+        "bytes": {
+          "forward": 2195087,
+          "reverse": 2227159
+        }
+      },
+      "mobile": {
+        "forward": "media/m/1.mp4",
+        "reverse": "media/m/1.rev.mp4",
+        "frames": 121,
+        "width": 1280,
+        "height": 720,
+        "bytes": {
+          "forward": 1076405,
+          "reverse": 1098190
+        }
+      }
+    },
+    "2": {
+      "frames": 361,
+      "duration": 15.041666666666666,
+      "desktop": {
+        "forward": "media/2.mp4",
+        "reverse": "media/2.rev.mp4",
+        "frames": 361,
+        "width": 1280,
+        "height": 720,
+        "bytes": {
+          "forward": 7424142,
+          "reverse": 7417754
+        }
+      },
+      "mobile": {
+        "forward": "media/m/2.mp4",
+        "reverse": "media/m/2.rev.mp4",
+        "frames": 361,
+        "width": 1280,
+        "height": 720,
+        "bytes": {
+          "forward": 3837553,
+          "reverse": 3812803
+        }
+      }
+    }
+  }
+}

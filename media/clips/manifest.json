@@ -1,0 +1,40 @@
+{
+  "fps": 24,
+  "clips": [
+    {
+      "i": 0,
+      "forward": "media/clips/t0.mp4",
+      "reverse": "media/clips/t0.rev.mp4",
+      "frames": 121,
+      "bytes": 1806256
+    },
+    {
+      "i": 1,
+      "forward": "media/clips/t1.mp4",
+      "reverse": "media/clips/t1.rev.mp4",
+      "frames": 119,
+      "bytes": 1789935
+    },
+    {
+      "i": 2,
+      "forward": "media/clips/t2.mp4",
+      "reverse": "media/clips/t2.rev.mp4",
+      "frames": 121,
+      "bytes": 2713625
+    },
+    {
+      "i": 3,
+      "forward": "media/clips/t3.mp4",
+      "reverse": "media/clips/t3.rev.mp4",
+      "frames": 123,
+      "bytes": 1802500
+    }
+  ],
+  "stills": {
+    "1": "top.jpeg",
+    "2": "media/stills/s2.jpg",
+    "3": "media/stills/s3.jpg",
+    "4": "media/stills/s4.jpg",
+    "5": "media/stills/s5.jpg"
+  }
+}

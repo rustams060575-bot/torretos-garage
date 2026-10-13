@@ -1,0 +1,5 @@
+node_modules/
+# raw source track (re-encoded into media/audio/soundtrack.mp3)
+2Pac_Pop_Smoke_W*.mp3
+*.tmp.mjs
+reports/tunnel.log
