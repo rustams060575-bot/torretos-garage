@@ -45,7 +45,7 @@
 
     /* scene 2 */
     'Behind the Performance': 'Detrás del rendimiento',
-    'Безкомпромиссный': 'Servicio',
+    'Бескомпромиссный': 'Servicio',
     'сервис.': 'sin concesiones.',
     'Pistons · forged Ø102 mm': 'Pistones · forjados Ø102 mm',
     'Cylinder head · 4V DOHC': 'Culata · 4V DOHC',
@@ -134,7 +134,7 @@
     'Стандарт качества': 'Estándar de calidad',
     'Сервисная сеть': 'Red de servicio',
     'Эталон качества': 'El estándar de calidad',
-    'Безкомпромиссный сервис': 'Servicio sin concesiones',
+    'Бескомпромиссный сервис': 'Servicio sin concesiones',
     'Схема двигателя Flat-6 4.0 L': 'Esquema del motor bóxer de 6 cilindros 4.0 L',
     'Абсолютный контроль': 'Control absoluto',
     'Технический регламент': 'Mantenimiento programado',

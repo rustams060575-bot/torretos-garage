@@ -46,7 +46,7 @@ window.SCENES_CONFIG = {
                level — SFX bus vs. music (1 = same level), duck — music level under the roar,
                driftTransition — transitions[i] that gets the long tyre squeal (2→3, garage drift). */
   audio: { src: 'media/audio/soundtrack.mp3', volume: 0.6, fadeInMs: 1600, fadeOutMs: 900,
-           sfx: { enabled: true, level: 0.3, duck: 0.8, driftTransition: 1 } },
+           sfx: { enabled: true, level: 0.2, duck: 0.92, driftTransition: 1 } },
 
   /* phones: heavy overlays (HUD, blueprint, cards) are shown this long after a scene lands, then hidden */
   mobilePanels: { holdMs: 3500 },
@@ -73,7 +73,7 @@ window.SCENES_CONFIG = {
   /* Rest state of each scene = exact frame of the video that leads into it. */
   scenes: [
     { id: 'hero',        label: 'ЭТАЛОН КАЧЕСТВА',              design: 'Frame 9.png',  rest: { src: '1', frame: 0 } },
-    { id: 'engineering', label: 'БЕЗКОМПРОМИССНЫЙ СЕРВИС',      design: 'Frame 10.png', rest: { src: '1', frame: 120 } },
+    { id: 'engineering', label: 'БЕСКОМПРОМИССНЫЙ СЕРВИС',      design: 'Frame 10.png', rest: { src: '1', frame: 120 } },
     { id: 'control',     label: 'АБСОЛЮТНЫЙ КОНТРОЛЬ',          design: 'Frame 11.png', rest: { src: '2', frame: 118 } },
     { id: 'maintenance', label: 'ТЕХНИЧЕСКИЙ РЕГЛАМЕНТ',        design: 'Frame 12.png', rest: { src: '2', frame: 238 } },
     { id: 'booking',     label: 'ТВОЙ АВТОМОБИЛЬ. НАШ СТАНДАРТ.', design: 'Frame 13.png', rest: { src: '2', frame: 360 } },

@@ -361,6 +361,34 @@ html[lang="es"] .chips li::before { left: calc(6.5 * var(--s)); }
 .bp-chip .n { fill: var(--orange); font: 400 22px var(--f-mono); letter-spacing: 0; }
 .bp-fig { fill: #fff; font: 600 23px var(--f-sans); letter-spacing: .17em; }
 .bp-sub { fill: rgba(220, 232, 248, .55); font: 400 19px var(--f-mono); letter-spacing: .06em; }
+/* blueprint comes alive on scene entry: pistons cycle (boxer phase), scan points pulse,
+   diagnostic leads draw in and keep a soft glow, a scan beam sweeps the drawing */
+.bp-piston { transform-box: view-box; }
+.bp-glow path { fill: none; stroke: var(--orange); stroke-width: 9; opacity: 0; }
+.bp-beam { opacity: 0; }
+.bp-dot circle { transform-box: fill-box; transform-origin: center; }
+html:not(.is-static) .scene-ui.is-active .bp-piston { animation: bpPiston 1.2s cubic-bezier(.45, 0, .55, 1) infinite; animation-delay: calc(var(--k) * -.4s); }
+html:not(.is-static) .scene-ui.is-active .bp-lead path,
+html:not(.is-static) .scene-ui.is-active .bp-glow path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: bpDraw .9s var(--ease-out) forwards; animation-delay: calc(.55s + var(--k) * .16s); }
+html:not(.is-static) .scene-ui.is-active .bp-glow path { animation: bpDraw .9s var(--ease-out) forwards, bpGlow 2.8s ease-in-out infinite; animation-delay: calc(.55s + var(--k) * .16s), calc(1.4s + var(--k) * .3s); }
+html:not(.is-static) .scene-ui.is-active .bp-dot circle:not(.o) { animation: bpPulse 2.2s ease-in-out infinite; }
+html:not(.is-static) .scene-ui.is-active .bp-dot circle.o { animation: bpRing 2.2s var(--ease-out) infinite; }
+.bp-dot circle:nth-child(4n + 2) { animation-delay: .55s !important; }
+.bp-dot circle:nth-child(4n + 3) { animation-delay: 1.1s !important; }
+.bp-dot circle:nth-child(4n + 4) { animation-delay: 1.65s !important; }
+html:not(.is-static) .scene-ui.is-active .bp-beam { animation: bpBeam 4.2s cubic-bezier(.45, 0, .55, 1) .4s infinite; }
+@keyframes bpPiston { 50% { transform: translateY(24px); } }
+@keyframes bpDraw { to { stroke-dashoffset: 0; } }
+@keyframes bpGlow { 0%, 100% { opacity: .12; } 50% { opacity: .5; } }
+@keyframes bpPulse { 50% { transform: scale(1.35); opacity: .7; } }
+@keyframes bpRing { 0% { transform: scale(1); opacity: .95; } 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes bpBeam { 0% { opacity: 0; transform: translateX(0); } 12% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; transform: translateX(1820px); } }
+html[data-media="mobile"] .bp-glow { display: none; }
+
+/* stat tiles: count-up keeps its width steady; typewriter shows a PCM block cursor */
+.stat b.is-counting { font-variant-numeric: tabular-nums; }
+.stat b.is-typing::after { content: ''; display: inline-block; width: .5em; height: .82em; margin-left: .08em; vertical-align: -.04em; background: var(--orange); animation: twCursor .9s steps(1) infinite; }
+@keyframes twCursor { 50% { opacity: 0; } }
 
 /* wheel ring (scene 3) */
 .wheel-ring { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none !important; overflow: visible; }
@@ -605,6 +633,7 @@ html[lang="es"] .chips li::before { left: calc(6.5 * var(--s)); }
   .scene-ui.is-active [data-r] { transition: opacity .45s linear; transition-delay: 0s; }
   .scene-ui.is-leaving [data-r] { transition: opacity .25s linear; }
   *, *::before, *::after { animation: none !important; }
+  .bp-lead path { stroke-dasharray: none !important; }
   .tach__arc, .tach__needle, .counter__fill, .led__knob, .knob i { transition: none !important; }
 }
 

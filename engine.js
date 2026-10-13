@@ -903,7 +903,7 @@
       t.gain = ctx.createGain(); t.gain.gain.value = 0; t.gain.connect(comp);
       t.music = ctx.createGain(); t.music.connect(t.gain);
       ctx.createMediaElementSource(el).connect(t.music);
-      var bus = ctx.createGain(); bus.gain.value = SX.level != null ? SX.level : 0.3; bus.connect(t.gain);
+      var bus = ctx.createGain(); bus.gain.value = SX.level != null ? SX.level : 0.2; bus.connect(t.gain);
       if (window.PorscheSFX && SX.enabled !== false) t.sfx = window.PorscheSFX(ctx, bus);
       t.ctx = ctx;
       el.volume = 1;
@@ -930,7 +930,7 @@
   }
   /* music dips under the engine for `sec`, then comes back */
   function duck(sec) {
-    var g = track.music.gain, now = track.ctx.currentTime, d = SX.duck != null ? SX.duck : 0.8;
+    var g = track.music.gain, now = track.ctx.currentTime, d = SX.duck != null ? SX.duck : 0.92;
     g.cancelScheduledValues(now);
     g.setValueAtTime(g.value, now);
     g.linearRampToValueAtTime(d, now + 0.25);
